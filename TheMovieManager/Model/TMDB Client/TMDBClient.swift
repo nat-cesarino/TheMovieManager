@@ -21,6 +21,7 @@ class TMDBClient {
     enum Endpoints {
         static let base = "https://api.themoviedb.org/3"
         static let apiKeyParam = "?api_key=\(TMDBClient.apiKey)"
+        static let baseImage = "https://image.tmdb.org/t/p/w500"
         
         case getWatchlist
         case getRequestToken
@@ -31,6 +32,8 @@ class TMDBClient {
         case getFavorites
         case search(String)
         case markWatchlist
+        case markFavorite
+        case posterImage(String)
         
         var stringValue: String {
             switch self {
@@ -42,7 +45,9 @@ class TMDBClient {
             case .logout: return Endpoints.base + "authentication/session" + Endpoints.apiKeyParam
             case .getFavorites: return Endpoints.base + "/account/\(Auth.accountId)/favorite/movies" + Endpoints.apiKeyParam + "&session_id=\(Auth.sessionId)"
             case .search(let query): return Endpoints.base + "/search/movie" + Endpoints.apiKeyParam + "&query=\(query.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? "")"
-            case .markWatchlist: return Endpoints.base + "/account/\(Auth.accountId)/watchlist" + Endpoints.apiKeyParam
+            case .markWatchlist: return Endpoints.base + "/account/\(Auth.accountId)/watchlist" + Endpoints.apiKeyParam + "&session_id=\(Auth.sessionId)"
+            case .markFavorite: return Endpoints.base + "/account/\(Auth.accountId)/favorite" + Endpoints.apiKeyParam + "&session_id=\(Auth.sessionId)"
+            case .posterImage(let posterPath): return Endpoints.baseImage + posterPath
             }
         }
         
@@ -222,5 +227,30 @@ class TMDBClient {
                 completion(false, error)
             }
         }
+    }
+    
+    class func markFavorite(movieId: Int, favorite: Bool, completion: @escaping (Bool, Error?) -> Void) {
+        let body = MarkFavorite(mediaType: "movie", mediaId: movieId, favorite: favorite)
+        taskForPostRequest(url: Endpoints.markFavorite.url, responseType: TMDBResponse.self, body: body) {
+            (response, error) in
+            if let response = response {
+                completion(response.statusCode ==
+                    1 || response.statusCode ==
+                    12 || response.statusCode ==
+                    13, nil)
+            } else {
+                completion(false, error)
+            }
+        }
+    }
+    
+    class func downloadPosterImage(path: String, completion: @escaping (Data?, Error?) -> Void) {
+        let task = URLSession.shared.dataTask(with: Endpoints.posterImage(path).url) {
+            data, responso, error in
+            DispatchQueue.main.async {
+                completion(data, error)
+            }
+        }
+        task.resume()
     }
 }

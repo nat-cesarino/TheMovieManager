@@ -56,6 +56,20 @@ extension WatchlistViewController: UITableViewDataSource, UITableViewDelegate {
         let movie = MovieModel.watchlist[indexPath.row]
         
         cell.textLabel?.text = movie.title
+        // Does the movie has a poster path?
+        // If so:
+        if let posterPath = movie.posterPath {
+            TMDBClient.downloadPosterImage(path: posterPath) {
+                (data, error) in
+                guard let data = data else {
+                    return
+                }
+                let image = UIImage(data: data)
+                cell.imageView?.image = image
+                // Force the view to update its content:
+                cell.setNeedsLayout()
+            }
+        }
         
         return cell
     }
