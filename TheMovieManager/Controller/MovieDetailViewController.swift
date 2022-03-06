@@ -35,7 +35,21 @@ class MovieDetailViewController: UIViewController {
     }
     
     @IBAction func watchlistButtonTapped(_ sender: UIBarButtonItem) {
-        
+        TMDBClient.markWatchlist(movieId: movie.id, watchlist: !isWatchlist, completion: handleWatchlistResponse(success:error:))
+    }
+    
+    func handleWatchlistResponse(success: Bool, error: Error?) {
+        if success {
+            // If it is already on the watchlist, I delete using filter
+            if isWatchlist {
+                MovieModel.watchlist = MovieModel.watchlist.filter()
+                { $0 != self.movie }
+            // If it is not, it is added to the list
+            } else {
+                MovieModel.watchlist.append(movie)
+            }
+            toggleBarButton(watchlistBarButtonItem, enabled: isWatchlist)
+        }
     }
     
     @IBAction func favoriteButtonTapped(_ sender: UIBarButtonItem) {
